@@ -19,7 +19,7 @@ class FamilyMemberSerializer(serializers.ModelSerializer):
 
 
 class HouseholdSerializer(serializers.ModelSerializer):
-    familymember = FamilyMemberSerializer(many=True, read_only=True)
+    familymembers = FamilyMemberSerializer(many=True, read_only=True)
 
     class Meta:
         model = Household
