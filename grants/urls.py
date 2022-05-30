@@ -31,5 +31,5 @@ urlpatterns = [
     path("api/v1/households/", include(household_router.urls)),
     path("api/v1/households/<int:id>/", include(household_router.urls)),
     path("api/v1/familymember/", include(family_member_router.urls)),
-    path("api/v1/grants/", views.GrantList.as_view()),
+    # path("api/v1/grants/", views.GrantList.as_view()),
 ]
