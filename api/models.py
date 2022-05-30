@@ -75,5 +75,23 @@ class FamilyMember(models.Model):
         - hack due to issue as old as time: https://code.djangoproject.com/ticket/7689
     """
 
+    def save(self, *args, **kwargs):
+        super(FamilyMember, self).save()
+        if self.spouse:
+            # prevent opposite sex marriages
+            if self.gender != self.spouse.gender:
+                self.spouse.spouse = self
+                self.marital_status = "Married"
+                self.spouse.marital_status = "Married"
+                super(FamilyMember, self.spouse).save()
+                super(FamilyMember, self).save()
+            else:
+                self.spouse = None
+        # no spouse, so make marital status single
+        if not self.spouse:
+            self.marital_status = "Single"
+            super(FamilyMember, self).save()
+            # person deletions will take out both spouses at once.
+
     def __str__(self):
         return "Name: %s, ID: %s, Household: %s" % (self.name, str(self.id), str(self.household.id))
