@@ -21,15 +21,15 @@ from rest_framework.routers import DefaultRouter
 household_router = DefaultRouter()
 household_router.register("", views.HouseholdViewSet, basename="API")
 
-family_member_router = DefaultRouter()
-family_member_router.register(
+familymember_router = DefaultRouter()
+familymember_router.register(
     "", views.FamilyMemberViewSet, basename="FamilyMemberAPI"
 )
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("api/v1/households/", include(household_router.urls)),
-    path("api/v1/households/<int:id>/", include(household_router.urls)),
-    path("api/v1/familymember/", include(family_member_router.urls)),
-    # path("api/v1/grants/", views.GrantList.as_view()),
+    path("api/v1/household/", include(household_router.urls)),
+    path("api/v1/household/<int:id>/", include(household_router.urls)),
+    path("api/v1/familymember/", include(familymember_router.urls)),
+    path("api/v1/grants/", views.GrantList.as_view()),
 ]
