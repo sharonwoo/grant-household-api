@@ -6,7 +6,7 @@ class FamilyMemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = FamilyMember
         fields = [
-            "id",
+            "uuid",
             "household",
             "name",
             "gender",
@@ -19,12 +19,12 @@ class FamilyMemberSerializer(serializers.ModelSerializer):
 
 
 class HouseholdSerializer(serializers.ModelSerializer):
-    familymembers = FamilyMemberSerializer(many=True, read_only=True)
+    family_members = FamilyMemberSerializer(many=True, read_only=True)
 
     class Meta:
         model = Household
         fields = [
-            "id",
+            "uuid",
             "housing_type",
-            "familymembers",
+            "family_members",
         ]

@@ -1,4 +1,5 @@
 from django.db import models
+import uuid
 """
 good to have but not currently implemented:
 UUIDs: id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -7,13 +8,16 @@ UUIDs: id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=Fals
 
 class Household(models.Model):
 
+    uuid = models.UUIDField(
+        primary_key=True, default=uuid.uuid4, editable=False)
+
     class HousingType(models.TextChoices):
         condo = "Condominium", "Condominium"
         hdb = "HDB", "HDB"
         landed = "Landed", "Landed"
 
     housing_type = models.CharField(
-        max_length=11, choices=HousingType.choices, default=HousingType.hdb)
+        max_length=11, choices=HousingType.choices)
 
     def __str__(self):
         return (
@@ -23,8 +27,12 @@ class Household(models.Model):
 
 
 class FamilyMember(models.Model):
+
+    uuid = models.UUIDField(
+        primary_key=True, default=uuid.uuid4, editable=False)
+
     household = models.ForeignKey(
-        Household, on_delete=models.CASCADE, related_name="familymembers",)
+        Household, on_delete=models.CASCADE, related_name="family_members")
 
     name = models.CharField(max_length=100)
 
@@ -33,7 +41,7 @@ class FamilyMember(models.Model):
         female = "Female", "Female"
 
     gender = models.CharField(
-        max_length=6, choices=Gender.choices, default=Gender.female)
+        max_length=6, choices=Gender.choices)  # default=Gender.female)
 
     class MaritalStatus(models.TextChoices):
         married = "Married", "Married"
@@ -48,7 +56,7 @@ class FamilyMember(models.Model):
     """
 
     marital_status = models.CharField(
-        max_length=7, choices=MaritalStatus.choices, default=MaritalStatus.single)
+        max_length=7, choices=MaritalStatus.choices)
 
     spouse = models.OneToOneField(
         "self", blank=True, null=True, on_delete=models.CASCADE)
@@ -59,7 +67,7 @@ class FamilyMember(models.Model):
         employed = "Employed", "Employed"
 
     occupation_type = models.CharField(
-        max_length=10, choices=OccupationType.choices, default=OccupationType.employed)
+        max_length=10, choices=OccupationType.choices)
 
     """
     Annual income assumptions: 

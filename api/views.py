@@ -82,7 +82,7 @@ class GrantList(ListAPIView):
         if household_income:
             get_household_ids = (
                 Household.objects.all()
-                .annotate(house_income=Sum("familymember__annual_income"))
+                .annotate(house_income=Sum("family_members__annual_income"))
                 .filter(house_income__lte=household_income)
             )
 
@@ -128,7 +128,7 @@ class GrantList(ListAPIView):
                 result = Household.objects.filter(
                     id__in=household_ids
                 ).prefetch_related(
-                    Prefetch("familymember", queryset=family_member_filter)
+                    Prefetch("family_members", queryset=family_member_filter)
                 )
 
             return result.distinct()
@@ -147,7 +147,7 @@ class GrantList(ListAPIView):
                 result = Household.objects.filter(
                     id__in=household_ids
                 ).prefetch_related(
-                    Prefetch("familymember", queryset=family_member_filter)
+                    Prefetch("family_members", queryset=family_member_filter)
                 )
 
             else:
@@ -166,7 +166,7 @@ class GrantList(ListAPIView):
                     )
                 )
                 result = Household.objects.prefetch_related(
-                    Prefetch("familymember", queryset=family_member_filter)
+                    Prefetch("family_members", queryset=family_member_filter)
                 )
 
             return result.distinct()
