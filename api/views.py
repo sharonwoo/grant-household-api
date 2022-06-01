@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.db.models import F, Sum, Prefetch
+from django.db.models import F, Sum, Prefetch, Q
 
 
 from .models import Household, FamilyMember
@@ -26,13 +26,13 @@ class FamilyMemberViewSet(viewsets.ModelViewSet):
     """
 
     def destroy(self, request, *args, **kwargs):
-        familymember = self.get_object()
-        spouse = familymember.spouse
+        family_member = self.get_object()
+        spouse = family_member.spouse
         if spouse is not None:
             spouse.spouse = None
             spouse.marital_status = "Single"
             spouse.save()
-        familymember.delete()
+        family_member.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -103,9 +103,9 @@ class GrantList(ListAPIView):
                     ]
                 )
                 result = Household.objects.filter(
-                    id__in=household_ids
+                    uuid__in=household_ids
                 ).prefetch_related(
-                    Prefetch("familymember", queryset=family_member_filter)
+                    Prefetch("family_members", queryset=family_member_filter)
                 )
 
             else:
@@ -126,7 +126,7 @@ class GrantList(ListAPIView):
                     )
                 )
                 result = Household.objects.filter(
-                    id__in=household_ids
+                    uuid__in=household_ids
                 ).prefetch_related(
                     Prefetch("family_members", queryset=family_member_filter)
                 )
@@ -144,9 +144,7 @@ class GrantList(ListAPIView):
                         timedelta(365.25 * age_less_than),
                     ]
                 )
-                result = Household.objects.filter(
-                    id__in=household_ids
-                ).prefetch_related(
+                result = Household.objects.prefetch_related(
                     Prefetch("family_members", queryset=family_member_filter)
                 )
 

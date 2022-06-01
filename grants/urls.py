@@ -28,8 +28,8 @@ familymember_router.register(
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("api/v1/household/", include(household_router.urls)),
-    path("api/v1/household/<int:id>/", include(household_router.urls)),
-    path("api/v1/familymember/", include(familymember_router.urls)),
+    path("api/v1/households/", include(household_router.urls)),
+    path("api/v1/households/<int:id>/", include(household_router.urls)),
+    path("api/v1/family_members/", include(familymember_router.urls)),
     path("api/v1/grants/", views.GrantList.as_view()),
 ]

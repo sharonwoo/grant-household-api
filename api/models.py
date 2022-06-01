@@ -1,9 +1,5 @@
 from django.db import models
 import uuid
-"""
-good to have but not currently implemented:
-UUIDs: id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-"""
 
 
 class Household(models.Model):
@@ -19,10 +15,13 @@ class Household(models.Model):
     housing_type = models.CharField(
         max_length=11, choices=HousingType.choices)
 
+    created_date = models.DateTimeField(auto_now_add=True)
+    updated_date = models.DateTimeField(auto_now=True)
+
     def __str__(self):
         return (
-            "Household ID: %s, Housing Type: %s" % (
-                str(self.id), self.get_housing_type_display())
+            "Household UUID: %s, Housing Type: %s" % (
+                str(self.uuid), self.get_housing_type_display())
         )
 
 
@@ -77,6 +76,9 @@ class FamilyMember(models.Model):
 
     date_of_birth = models.DateField()
 
+    created_date = models.DateTimeField(auto_now_add=True)
+    updated_date = models.DateTimeField(auto_now=True)
+
     """ 
     TRY OUT making one to one relationships symmetrical with modified .save()
         - follows https://stackoverflow.com/questions/50355697/i-have-a-onetoone-relationship-between-two-objects-of-the-same-class-in-a-django
@@ -102,4 +104,4 @@ class FamilyMember(models.Model):
             # person deletions will take out both spouses at once.
 
     def __str__(self):
-        return "Name: %s, ID: %s, Household: %s" % (self.name, str(self.id), str(self.household.id))
+        return "Name: %s, UUID: %s, Household: %s" % (self.name, str(self.uuid), str(self.household.uuid))
