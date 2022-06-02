@@ -23,7 +23,7 @@ class FamilyMemberViewSet(viewsets.ModelViewSet):
     queryset = FamilyMember.objects.all()
 
     """
-    Modified destroy method so DELETE does not take out both paired spouses. 
+    Modified destroy method so DELETE does not take out both paired spouses.
     """
 
     def destroy(self, request, *args, **kwargs):
@@ -41,8 +41,8 @@ class FamilyMemberViewSet(viewsets.ModelViewSet):
 GrantList API - aliases to "api/v1/grants/"
 Use ListViewAPI
 Need timedelta and date for date queries
-Need F, Sum for date and household income queries 
-Develop and testing queries in Django shell 
+Need F, Sum for date and household income queries
+Develop and testing queries in Django shell
 
 TODO: Lock it behind authentication. Notes:
 - https://stackoverflow.com/questions/66765512/different-authentications-and-permissions-in-modelviewset-django-rest-framewor
@@ -126,7 +126,20 @@ class GrantList(ListAPIView):
                 other permutations not given in cases
                 """
 
-                family_member_filter = (
+                households_with_spouses = Household.objects.filter(uuid__in=household_ids).filter(
+                    Q(family_members__household=F("family_members__spouse__household")))
+
+                household_with_spouses_ids = list(
+                    set(households_with_spouses.values_list("pk", flat=True)))
+
+                households_with_spouses_and_babies = Household.objects.filter(uuid__in=household_with_spouses_ids).annotate(
+                    family_members__age=(date.today() - F("family_members__date_of_birth"))).filter(
+                    family_members__age__lte=timedelta(365.25 * age_less_than))
+
+                household_with_spouses_and_babies_ids = list(
+                    set(households_with_spouses_and_babies.values_list("pk", flat=True)))
+
+                family_member_spouses_and_babies = (
                     FamilyMember.objects.all()
                     .annotate(age=(date.today() - F("date_of_birth")))
                     .filter(
@@ -136,20 +149,21 @@ class GrantList(ListAPIView):
                                 timedelta(365.25 * age_less_than),
                             ]
                         )
-                        & Q(household=F("spouse__household"))
+                        | Q(household=F("spouse__household"))
                     )
                 )
                 result = Household.objects.filter(
-                    uuid__in=household_ids
+                    uuid__in=household_with_spouses_and_babies_ids
                 ).prefetch_related(
-                    Prefetch("family_members", queryset=family_member_filter)
+                    Prefetch("family_members",
+                             queryset=family_member_spouses_and_babies)
                 )
 
             return result.distinct()
 
         else:
             if married is None:
-                """Baby Sunshine Grant"""
+                """Baby Sunshine Grant <5; Elder Bonus >50"""
                 family_member_filter = FamilyMember.objects.annotate(
                     age=(date.today() - F("date_of_birth"))
                 ).filter(
@@ -164,21 +178,37 @@ class GrantList(ListAPIView):
 
             else:
                 """Not in given grants"""
-                family_member_filter = (
+                households_with_spouses = Household.objects.all().filter(
+                    Q(family_members__household=F("family_members__spouse__household")))
+
+                household_with_spouses_ids = list(
+                    set(households_with_spouses.values_list("pk", flat=True)))
+
+                households_with_spouses_and_babies = Household.objects.filter(uuid__in=household_with_spouses_ids).annotate(
+                    family_members__age=(date.today() - F("family_members__date_of_birth"))).filter(
+                    family_members__age__lte=timedelta(365.25 * age_less_than))
+
+                household_with_spouses_and_babies_ids = list(
+                    set(households_with_spouses_and_babies.values_list("pk", flat=True)))
+
+                family_member_spouses_and_babies = (
                     FamilyMember.objects.all()
                     .annotate(age=(date.today() - F("date_of_birth")))
                     .filter(
                         Q(
                             age__range=[
-                                timedelta(365 * age_more_than),
-                                timedelta(365 * age_less_than),
+                                timedelta(365.25 * age_more_than),
+                                timedelta(365.25 * age_less_than),
                             ]
                         )
-                        & Q(household=F("spouse__household"))
+                        | Q(household=F("spouse__household"))
                     )
                 )
-                result = Household.objects.prefetch_related(
-                    Prefetch("family_members", queryset=family_member_filter)
+                result = Household.objects.filter(
+                    uuid__in=household_with_spouses_and_babies_ids
+                ).prefetch_related(
+                    Prefetch("family_members",
+                             queryset=family_member_spouses_and_babies)
                 )
 
             return result.distinct()
