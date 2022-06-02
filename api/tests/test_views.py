@@ -11,17 +11,22 @@ def test_base64():  # check if pytest is working as expected
     assert base64.b64encode(bytes.fromhex(given)) == expected
 
 
+def test_an_admin_view(admin_client):  # django admin test
+    response = admin_client.get('/admin/')
+    assert response.status_code == 200
+
+
 """
 basic tests to check if invalid objects are not accepted. 
 """
 
 
 @pytest.mark.django_db
-def test_add_household_invalid_json(client):
+def test_add_household_invalid_json(admin_client):
     households = Household.objects.all()
     old_household_len = len(households)
 
-    resp = client.post(
+    resp = admin_client.post(
         "/api/v1/households/",
         {},
         content_type="application/json"
@@ -33,11 +38,11 @@ def test_add_household_invalid_json(client):
 
 
 @pytest.mark.django_db
-def test_add_family_member_invalid_json(client):
+def test_add_family_member_invalid_json(admin_client):
     family_members = FamilyMember.objects.all()
     old_family_members_len = len(family_members)
 
-    resp = client.post(
+    resp = admin_client.post(
         "/api/v1/family_members/",
         {},
         content_type="application/json"
@@ -54,7 +59,7 @@ basic model tests
 
 
 @pytest.mark.django_db
-def test_household_model():
+def test_household_model(admin_client):
     household = Household(housing_type="HDB")
     household.save()
     assert household.housing_type == "HDB"
@@ -65,7 +70,7 @@ def test_household_model():
 
 
 @pytest.mark.django_db
-def test_family_member_model():
+def test_family_member_model(admin_client):
     household = Household(housing_type="HDB")
     household.save()
 
@@ -84,3 +89,38 @@ def test_family_member_model():
     assert family_member.created_date
     assert family_member.updated_date
     assert family_member.name == "pytest person 1"
+
+
+""" note: this test will only work if spousal check for date of birth is disallowed; 
+    pytest doesn't seem to inherit self.date_of_birth date types and sees it as string, 
+    while in production this is a date."""
+
+
+# @pytest.mark.django_db
+# def test_spousal_relations_in_model(admin_client):
+#     household = Household(housing_type="HDB")
+#     household.save()
+
+#     male_married = FamilyMember(household=household,
+#                                 name="marriage 1",
+#                                 gender="Male",
+#                                 marital_status="Single",
+#                                 spouse=None,
+#                                 occupation_type="Unemployed",
+#                                 annual_income=0,
+#                                 date_of_birth="1987-06-02"
+#                                 )
+#     male_married.save()
+
+#     female_married = FamilyMember(household=household,
+#                                   name="marriage 2",
+#                                   gender="Female",
+#                                   marital_status="Single",
+#                                   spouse=male_married,
+#                                   occupation_type="Unemployed",
+#                                   annual_income=0,
+#                                   date_of_birth="1987-06-02"
+#                                   )
+#     female_married.save()
+
+#     assert female_married.spouse == male_married

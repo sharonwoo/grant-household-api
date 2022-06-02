@@ -1,3 +1,4 @@
+from ast import Str
 from django.db import models
 from django.core.validators import MaxValueValidator
 from django.db.models.functions import Now

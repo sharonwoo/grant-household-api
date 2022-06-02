@@ -16,11 +16,13 @@ from rest_framework.permissions import IsAdminUser, BasePermission
 class HouseholdViewSet(viewsets.ModelViewSet):
     serializer_class = HouseholdSerializer
     queryset = Household.objects.all()
+    permission_classes = (IsAdminUser,)
 
 
 class FamilyMemberViewSet(viewsets.ModelViewSet):
     serializer_class = FamilyMemberSerializer
     queryset = FamilyMember.objects.all()
+    permission_classes = (IsAdminUser,)
 
     """
     Modified destroy method so DELETE does not take out both paired spouses.
@@ -49,17 +51,13 @@ TODO: Lock it behind authentication. Notes:
 """
 
 
-class IsSuperUser(BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_superuser
-
-
 class GrantList(ListAPIView):
-    # if IsSuperUser:
+    # if IsAdminUser:
     #     serializer_class = HouseholdSerializer
     # else:
     #     serializer_class = HouseholdGrantSerializer
     serializer_class = HouseholdSerializer
+    permission_classes = (IsAdminUser,)
     """
     test cases:
     1. Student Encouragement Bonus: age <16, income <150,000
