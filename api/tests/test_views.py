@@ -66,10 +66,10 @@ def test_household_model():
 
 @pytest.mark.django_db
 def test_family_member_model():
-    # household = Household(housing_type="HDB")
-    # household.save()
+    household = Household(housing_type="HDB")
+    household.save()
 
-    family_member = FamilyMember(household="9f5609e5-ce08-4107-9750-71a704607861",
+    family_member = FamilyMember(household=household,
                                  name="pytest person 1",
                                  gender="Male",
                                  marital_status="Single",

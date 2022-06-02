@@ -31,7 +31,7 @@ class HouseholdSerializer(serializers.ModelSerializer):
 
 
 """
-UUID only views:
+TODO - UUID only views:
 """
 
 

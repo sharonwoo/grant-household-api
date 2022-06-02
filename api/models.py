@@ -108,6 +108,7 @@ class FamilyMember(models.Model):
                 super(FamilyMember, self).save()
             else:
                 self.spouse = None
+                self.marital_status = "Single"
                 super(FamilyMember, self).save()
                 # old way of doing it https://stackoverflow.com/questions/2281179/how-to-add-check-constraints-for-django-model-fields
         # no spouse, so make marital status single
