@@ -87,7 +87,7 @@ class GrantList(ListAPIView):
 
         if household_income:
             get_household_ids = (
-                Household.objects.all()
+                Household.objects
                 .annotate(house_income=Sum("family_members__annual_income"))
                 .filter(house_income__lte=household_income)
             )
@@ -157,6 +157,7 @@ class GrantList(ListAPIView):
         else:
             if married is None:
                 """Baby Sunshine Grant <5; Elder Bonus >50"""
+
                 family_member_filter = FamilyMember.objects.annotate(
                     age=(date.today() - F("date_of_birth"))
                 ).filter(
@@ -171,7 +172,7 @@ class GrantList(ListAPIView):
 
             else:
                 """Not in given grants"""
-                households_with_spouses = Household.objects.all().filter(
+                households_with_spouses = Household.objects.filter(
                     Q(family_members__household=F("family_members__spouse__household")))
 
                 household_with_spouses_ids = list(

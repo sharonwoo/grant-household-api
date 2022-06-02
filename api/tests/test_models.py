@@ -139,6 +139,18 @@ def test_spousal_relations_in_model(admin_client):
                                      )
     invalid_married_1.save()
 
+    invalid_married_2 = FamilyMember(household=household,
+                                     name="marriage 1",
+                                     gender="Male",
+                                     marital_status="Single",
+                                     spouse=None,
+                                     occupation_type="Unemployed",
+                                     annual_income=0,
+                                     date_of_birth="2010-06-02"
+                                     )
+    invalid_married_2.save()
+
+    """test for invalid genders of spouses"""
     resp = admin_client.post(
         "/api/v1/family_members/",
         {'household': str(household.uuid),
@@ -149,6 +161,36 @@ def test_spousal_relations_in_model(admin_client):
          'occupation_type': "Unemployed",
          'annual_income': 0,
          'date_of_birth': "1987-06-02"},
+        content_type="application/json"
+    )
+    assert resp.status_code == 400
+
+    """test for invalid age of user"""
+    resp = admin_client.post(
+        "/api/v1/family_members/",
+        {'household': str(household.uuid),
+         'name': "marriage 2",
+         'gender': "Female",
+            'marital_status': "Single",
+            'spouse': str(invalid_married_1.uuid),
+            'occupation_type': "Unemployed",
+            'annual_income': 0,
+            'date_of_birth': "2022-06-02"},
+        content_type="application/json"
+    )
+    assert resp.status_code == 400
+
+    """test for invalid age of user"""
+    resp = admin_client.post(
+        "/api/v1/family_members/",
+        {'household': str(household.uuid),
+         'name': "marriage 2",
+         'gender': "Female",
+            'marital_status': "Single",
+            'spouse': str(invalid_married_2.uuid),
+            'occupation_type': "Unemployed",
+            'annual_income': 0,
+            'date_of_birth': "1987-06-02"},
         content_type="application/json"
     )
     assert resp.status_code == 400
