@@ -180,7 +180,7 @@ def test_spousal_relations_in_model(admin_client):
     )
     assert resp.status_code == 400
 
-    """test for invalid age of user"""
+    """test for invalid age of spouse"""
     resp = admin_client.post(
         "/api/v1/family_members/",
         {'household': str(household.uuid),
