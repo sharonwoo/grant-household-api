@@ -126,6 +126,7 @@ def test_spousal_relations_in_model(admin_client):
     female_married.save()
 
     assert female_married.spouse == male_married
+    assert female_married.household == male_married.household
 
     invalid_married_1 = FamilyMember(household=household,
                                      name="marriage 1",
