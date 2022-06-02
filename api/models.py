@@ -1,9 +1,21 @@
 from django.db import models
 from django.core.validators import MaxValueValidator
 from django.db.models.functions import Now
+#from django.core.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError
+
 
 from datetime import date, timedelta
 import uuid
+
+# def custom_exception_handler(exc, context):
+#     # Call REST framework's default exception handler first,
+#     # to get the standard error response.
+#     response = exception_handler(exc, context)
+#     if response is None and isinstance(exc, ValidationError):
+#         return Response(status=400)
+
+#     return response
 
 
 class Household(models.Model):
@@ -92,8 +104,18 @@ class FamilyMember(models.Model):
         - hack due to issue as old as time: https://code.djangoproject.com/ticket/7689
     """
 
+    def clean(self, *args, **kwargs):
+        if self.spouse:
+            if self.gender != self.spouse.gender \
+                    and self.date_of_birth <= (date.today() - timedelta(365.25 * 21)) \
+                    and self.spouse.date_of_birth <= (date.today() - timedelta(365.25 * 21)):
+                pass
+            else:
+                raise ValidationError(
+                    ({"Invalid data": 'Marriage is not legal: only heterosexual unions for those above 21'}))
+
     def save(self, *args, **kwargs):
-        super(FamilyMember, self).save()
+        self.full_clean()  # calls clean
         if self.spouse:
             # allow the marriage if heterosexual and above 21
             if self.gender != self.spouse.gender \
@@ -110,7 +132,7 @@ class FamilyMember(models.Model):
                 super(FamilyMember, self).save()
                 # old way of doing it https://stackoverflow.com/questions/2281179/how-to-add-check-constraints-for-django-model-fields
         # no spouse, so make marital status single
-        if not self.spouse:
+        else:
             self.marital_status = "Single"
             super(FamilyMember, self).save()
 

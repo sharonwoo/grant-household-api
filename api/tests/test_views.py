@@ -91,36 +91,63 @@ def test_family_member_model(admin_client):
     assert family_member.name == "pytest person 1"
 
 
-""" note: this test will only work if spousal check for date of birth is disallowed; 
+""" note:
     pytest doesn't seem to inherit self.date_of_birth date types and sees it as string, 
-    while in production this is a date."""
+    while in production this is a date.
+    
+    fixed as model validation has been moved to clean/full_clean methods. """
 
 
-# @pytest.mark.django_db
-# def test_spousal_relations_in_model(admin_client):
-#     household = Household(housing_type="HDB")
-#     household.save()
+@pytest.mark.django_db
+def test_spousal_relations_in_model(admin_client):
+    household = Household(housing_type="HDB")
+    household.save()
 
-#     male_married = FamilyMember(household=household,
-#                                 name="marriage 1",
-#                                 gender="Male",
-#                                 marital_status="Single",
-#                                 spouse=None,
-#                                 occupation_type="Unemployed",
-#                                 annual_income=0,
-#                                 date_of_birth="1987-06-02"
-#                                 )
-#     male_married.save()
+    male_married = FamilyMember(household=household,
+                                name="marriage 1",
+                                gender="Male",
+                                marital_status="Single",
+                                spouse=None,
+                                occupation_type="Unemployed",
+                                annual_income=0,
+                                date_of_birth="1987-06-02"
+                                )
+    male_married.save()
 
-#     female_married = FamilyMember(household=household,
-#                                   name="marriage 2",
-#                                   gender="Female",
-#                                   marital_status="Single",
-#                                   spouse=male_married,
-#                                   occupation_type="Unemployed",
-#                                   annual_income=0,
-#                                   date_of_birth="1987-06-02"
-#                                   )
-#     female_married.save()
+    female_married = FamilyMember(household=household,
+                                  name="marriage 2",
+                                  gender="Female",
+                                  marital_status="Single",
+                                  spouse=male_married,
+                                  occupation_type="Unemployed",
+                                  annual_income=0,
+                                  date_of_birth="1987-06-02"
+                                  )
+    female_married.save()
 
-#     assert female_married.spouse == male_married
+    assert female_married.spouse == male_married
+
+    invalid_married_1 = FamilyMember(household=household,
+                                     name="marriage 1",
+                                     gender="Male",
+                                     marital_status="Single",
+                                     spouse=None,
+                                     occupation_type="Unemployed",
+                                     annual_income=0,
+                                     date_of_birth="1987-06-02"
+                                     )
+    invalid_married_1.save()
+
+    resp = admin_client.post(
+        "/api/v1/family_members/",
+        {'household': str(household.uuid),
+         'name': "marriage 2",
+         'gender': "Male",
+         'marital_status': "Single",
+         'spouse': str(invalid_married_1.uuid),
+         'occupation_type': "Unemployed",
+         'annual_income': 0,
+         'date_of_birth': "1987-06-02"},
+        content_type="application/json"
+    )
+    assert resp.status_code == 400
