@@ -92,7 +92,7 @@ class GrantList(ListAPIView):
                 .filter(house_income__lte=household_income)
             )
 
-            household_ids = list(
+            household_income_ids = list(
                 set(get_household_ids.values_list("pk", flat=True)))
 
             if married is None:
@@ -100,6 +100,19 @@ class GrantList(ListAPIView):
                 Student Encouragement Bonus: return only students < 16
                 other permutations not given in cases
                 """
+                households_with_kids = Household.objects.filter(uuid__in=household_income_ids).annotate(
+                    family_members__age=(
+                        date.today() - F("family_members__date_of_birth"))
+                ).filter(
+                    family_members__age__range=[
+                        timedelta(365.25 * age_more_than),
+                        timedelta(365.25 * age_less_than),
+                    ]
+                )
+
+                households_with_kids_ids = list(
+                    set(households_with_kids.values_list("pk", flat=True)))
+
                 family_member_filter = FamilyMember.objects.annotate(
                     age=(date.today() - F("date_of_birth"))
                 ).filter(
@@ -109,7 +122,7 @@ class GrantList(ListAPIView):
                     ]
                 )
                 result = Household.objects.filter(
-                    uuid__in=household_ids
+                    uuid__in=households_with_kids_ids
                 ).prefetch_related(
                     Prefetch("family_members", queryset=family_member_filter)
                 )
@@ -119,7 +132,7 @@ class GrantList(ListAPIView):
                 other permutations not given in cases
                 """
 
-                households_with_spouses = Household.objects.filter(uuid__in=household_ids).filter(
+                households_with_spouses = Household.objects.filter(uuid__in=household_income_ids).filter(
                     Q(family_members__household=F("family_members__spouse__household")))
 
                 household_with_spouses_ids = list(
@@ -158,6 +171,19 @@ class GrantList(ListAPIView):
             if married is None:
                 """Baby Sunshine Grant <5; Elder Bonus >50"""
 
+                households_with_kids = Household.objects.annotate(
+                    family_members__age=(
+                        date.today() - F("family_members__date_of_birth"))
+                ).filter(
+                    family_members__age__range=[
+                        timedelta(365.25 * age_more_than),
+                        timedelta(365.25 * age_less_than),
+                    ]
+                )
+
+                households_with_kids_ids = list(
+                    set(households_with_kids.values_list("pk", flat=True)))
+
                 family_member_filter = FamilyMember.objects.annotate(
                     age=(date.today() - F("date_of_birth"))
                 ).filter(
@@ -166,7 +192,9 @@ class GrantList(ListAPIView):
                         timedelta(365.25 * age_less_than),
                     ]
                 )
-                result = Household.objects.prefetch_related(
+                result = Household.objects.filter(
+                    uuid__in=households_with_kids_ids
+                ).prefetch_related(
                     Prefetch("family_members", queryset=family_member_filter)
                 )
 

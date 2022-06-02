@@ -1,21 +1,11 @@
 from django.db import models
 from django.core.validators import MaxValueValidator
 from django.db.models.functions import Now
-#from django.core.exceptions import ValidationError
 from rest_framework.exceptions import ValidationError
 
 
 from datetime import date, timedelta
 import uuid
-
-# def custom_exception_handler(exc, context):
-#     # Call REST framework's default exception handler first,
-#     # to get the standard error response.
-#     response = exception_handler(exc, context)
-#     if response is None and isinstance(exc, ValidationError):
-#         return Response(status=400)
-
-#     return response
 
 
 class Household(models.Model):
@@ -62,15 +52,6 @@ class FamilyMember(models.Model):
         married = "Married", "Married"
         single = "Single", "Single"
 
-    """
-    Spouse and marital status assumptions:
-        - If FamilyMember has spouse, marital_status must be "Married"
-        - Spouses can live separately in different households
-        - If FamilyMember's spouse is deleted (maybe they died?), marital_status should revert to "Single"
-        - Only a pair of husband and wife can be Married. All else will default to "Single" when FamilyMember is created
-        - Spouses can only get married if age >= 21
-    """
-
     marital_status = models.CharField(
         max_length=7, choices=MaritalStatus.choices)
 
@@ -93,15 +74,17 @@ class FamilyMember(models.Model):
 
     date_of_birth = models.DateField(
         validators=[MaxValueValidator(limit_value=date.today)]
-    )  # django.db.models.fields.DateField
+    )
 
     created_date = models.DateTimeField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now=True)
-
     """
-    TRY OUT making one to one relationships symmetrical with modified .save()
-        - follows https://stackoverflow.com/questions/50355697/i-have-a-onetoone-relationship-between-two-objects-of-the-same-class-in-a-django
-        - hack due to issue as old as time: https://code.djangoproject.com/ticket/7689
+    Spouse and marital status assumptions:
+        - If FamilyMember has spouse, marital_status must be "Married"
+        - Spouses can live separately in different households
+        - If FamilyMember's spouse is deleted (maybe they died?), marital_status should revert to "Single"
+        - Only a pair of husband and wife can be Married. All else will result in a validation error if a relationship is attempted
+        - Spouses can only get married if age >= 21
     """
 
     def clean(self, *args, **kwargs):
@@ -113,6 +96,11 @@ class FamilyMember(models.Model):
             else:
                 raise ValidationError(
                     ({"Invalid data": 'Marriage is not legal: only heterosexual unions for those above 21'}))
+    """
+    One to one relationships symmetrical with modified .save()
+        - hack IN THE DOCS due to issue as old as time: https://code.djangoproject.com/ticket/7689
+        - follows https://stackoverflow.com/questions/50355697/i-have-a-onetoone-relationship-between-two-objects-of-the-same-class-in-a-django
+    """
 
     def save(self, *args, **kwargs):
         self.full_clean()  # calls clean
@@ -143,17 +131,5 @@ class FamilyMember(models.Model):
             models.CheckConstraint(
                 check=models.Q(date_of_birth__lte=Now()),
                 name='date_of_birth_cannot_be_future_dated'
-            ),
-
-            # these two don't currently work, I can still add spouses; need to hack .save() or db constraint
-            models.CheckConstraint(
-                check=models.Q(
-                    spouse__date_of_birth__lte=Now() - timedelta(365.25*21)),
-                name='age_above_21_for_spouse'
-            ),
-            models.CheckConstraint(
-                check=models.Q(
-                    models.F("spouse__gender") != models.F("gender")),
-                name='heterosexual marriages only'
             ),
         ]
