@@ -1,4 +1,10 @@
 from django.db import models
+from django.core.validators import MaxValueValidator
+from django.db.models.functions import Now
+from django.db.models import F, Sum, Prefetch, Q
+
+
+from datetime import date, timedelta, datetime
 import uuid
 
 
@@ -47,11 +53,12 @@ class FamilyMember(models.Model):
         single = "Single", "Single"
 
     """
-    Spouse and marital status assumptions: 
+    Spouse and marital status assumptions:
         - If FamilyMember has spouse, marital_status must be "Married"
         - Spouses can live separately in different households
         - If FamilyMember's spouse is deleted (maybe they died?), marital_status should revert to "Single"
         - Only a pair of husband and wife can be Married. All else will default to "Single" when FamilyMember is created
+        - Spouses can only get married if age >= 21
     """
 
     marital_status = models.CharField(
@@ -69,17 +76,19 @@ class FamilyMember(models.Model):
         max_length=10, choices=OccupationType.choices)
 
     """
-    Annual income assumptions: 
+    Annual income assumptions:
         - Cannot be less than 0: follows that household income lower bound is 0
     """
     annual_income = models.PositiveIntegerField()
 
-    date_of_birth = models.DateField()
+    date_of_birth = models.DateField(
+        validators=[MaxValueValidator(limit_value=date.today)]
+    )  # django.db.models.fields.DateField
 
     created_date = models.DateTimeField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now=True)
 
-    """ 
+    """
     TRY OUT making one to one relationships symmetrical with modified .save()
         - follows https://stackoverflow.com/questions/50355697/i-have-a-onetoone-relationship-between-two-objects-of-the-same-class-in-a-django
         - hack due to issue as old as time: https://code.djangoproject.com/ticket/7689
@@ -88,8 +97,10 @@ class FamilyMember(models.Model):
     def save(self, *args, **kwargs):
         super(FamilyMember, self).save()
         if self.spouse:
-            # prevent opposite sex marriages
-            if self.gender != self.spouse.gender:
+            # allow the marriage if heterosexual and above 21
+            if self.gender != self.spouse.gender \
+                    and self.date_of_birth <= (date.today() - timedelta(365.25 * 21)) \
+                    and self.spouse.date_of_birth <= (date.today() - timedelta(365.25 * 21)):
                 self.spouse.spouse = self
                 self.marital_status = "Married"
                 self.spouse.marital_status = "Married"
@@ -97,11 +108,32 @@ class FamilyMember(models.Model):
                 super(FamilyMember, self).save()
             else:
                 self.spouse = None
+                super(FamilyMember, self).save()
+                # old way of doing it https://stackoverflow.com/questions/2281179/how-to-add-check-constraints-for-django-model-fields
         # no spouse, so make marital status single
         if not self.spouse:
             self.marital_status = "Single"
             super(FamilyMember, self).save()
-            # person deletions will take out both spouses at once.
 
     def __str__(self):
         return "Name: %s, UUID: %s, Household: %s" % (self.name, str(self.uuid), str(self.household.uuid))
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(date_of_birth__lte=Now()),
+                name='date_of_birth_cannot_be_future_dated'
+            ),
+
+            # these two don't currently work, I can still add spouses; need to hack .save() or db constraint
+            models.CheckConstraint(
+                check=models.Q(
+                    spouse__date_of_birth__lte=Now() - timedelta(365.25*21)),
+                name='age_above_21_for_spouse'
+            ),
+            models.CheckConstraint(
+                check=models.Q(
+                    models.F("spouse__gender") != models.F("gender")),
+                name='heterosexual marriages only'
+            ),
+        ]

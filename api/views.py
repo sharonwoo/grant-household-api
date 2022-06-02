@@ -3,13 +3,14 @@ from django.db.models import F, Sum, Prefetch, Q
 
 
 from .models import Household, FamilyMember
-from .serializers import HouseholdSerializer, FamilyMemberSerializer
+from .serializers import HouseholdSerializer, FamilyMemberSerializer, HouseholdGrantSerializer, FamilyMemberGrantSerializer
 
 from datetime import date, timedelta
 
 # rest_framework imports
 from rest_framework import serializers, viewsets
 from rest_framework.generics import ListAPIView
+from rest_framework.permissions import IsAdminUser, BasePermission
 
 
 class HouseholdViewSet(viewsets.ModelViewSet):
@@ -37,21 +38,33 @@ class FamilyMemberViewSet(viewsets.ModelViewSet):
 
 
 """
-TODO - GrantList API - aliases to "api/v1/grants/"
+GrantList API - aliases to "api/v1/grants/"
 Use ListViewAPI
 Need timedelta and date for date queries
 Need F, Sum for date and household income queries 
 Develop and testing queries in Django shell 
+
+TODO: Lock it behind authentication. Notes:
+- https://stackoverflow.com/questions/66765512/different-authentications-and-permissions-in-modelviewset-django-rest-framewor
 """
 
 
+class IsSuperUser(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_superuser
+
+
 class GrantList(ListAPIView):
+    # if IsSuperUser:
+    #     serializer_class = HouseholdSerializer
+    # else:
+    #     serializer_class = HouseholdGrantSerializer
     serializer_class = HouseholdSerializer
     """
     test cases:
     1. Student Encouragement Bonus: age <16, income <150,000
     2. Family Togetherness Scheme: husband & wife, age < 18
-        Q: if wife or husband < 18?
+        n.b. marriages not allowed if less than 21 in our api
     3. Elder Bonus: age > 50
     4. Baby Sunshine Grant: age < 5
     5. YOLO GST Grant: income < 100,000
@@ -112,6 +125,7 @@ class GrantList(ListAPIView):
                 """Family Togetherness Scheme,
                 other permutations not given in cases
                 """
+
                 family_member_filter = (
                     FamilyMember.objects.all()
                     .annotate(age=(date.today() - F("date_of_birth")))
@@ -122,7 +136,7 @@ class GrantList(ListAPIView):
                                 timedelta(365.25 * age_less_than),
                             ]
                         )
-                        | Q(household=F("spouse__household"))
+                        & Q(household=F("spouse__household"))
                     )
                 )
                 result = Household.objects.filter(
@@ -160,7 +174,7 @@ class GrantList(ListAPIView):
                                 timedelta(365 * age_less_than),
                             ]
                         )
-                        | Q(household=F("spouse__household"))
+                        & Q(household=F("spouse__household"))
                     )
                 )
                 result = Household.objects.prefetch_related(

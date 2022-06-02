@@ -28,3 +28,27 @@ class HouseholdSerializer(serializers.ModelSerializer):
             "housing_type",
             "family_members",
         ]
+
+
+"""
+UUID only views:
+"""
+
+
+class FamilyMemberGrantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FamilyMember
+        fields = [
+            "uuid",
+        ]
+
+
+class HouseholdGrantSerializer(serializers.ModelSerializer):
+    family_members = FamilyMemberGrantSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Household
+        fields = [
+            "uuid",
+            "family_members",
+        ]
