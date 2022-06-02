@@ -31,7 +31,8 @@ class HouseholdSerializer(serializers.ModelSerializer):
 
 
 """
-TODO - UUID only views:
+TODO - UUID only views
+Not currently needed with authentication, but may be good to implement in future
 """
 
 

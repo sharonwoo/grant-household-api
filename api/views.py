@@ -3,14 +3,14 @@ from django.db.models import F, Sum, Prefetch, Q
 
 
 from .models import Household, FamilyMember
-from .serializers import HouseholdSerializer, FamilyMemberSerializer, HouseholdGrantSerializer, FamilyMemberGrantSerializer
+from .serializers import HouseholdSerializer, FamilyMemberSerializer
 
 from datetime import date, timedelta
 
 # rest_framework imports
 from rest_framework import serializers, viewsets
 from rest_framework.generics import ListAPIView
-from rest_framework.permissions import IsAdminUser, BasePermission
+from rest_framework.permissions import IsAdminUser
 
 
 class HouseholdViewSet(viewsets.ModelViewSet):
@@ -45,17 +45,12 @@ Use ListViewAPI
 Need timedelta and date for date queries
 Need F, Sum for date and household income queries
 Develop and testing queries in Django shell
-
-TODO: Lock it behind authentication. Notes:
-- https://stackoverflow.com/questions/66765512/different-authentications-and-permissions-in-modelviewset-django-rest-framewor
+Lock it behind authentication - only superusers can see this 
+TODO: multiple forms of authentication (read only, edit, etc)
 """
 
 
 class GrantList(ListAPIView):
-    # if IsAdminUser:
-    #     serializer_class = HouseholdSerializer
-    # else:
-    #     serializer_class = HouseholdGrantSerializer
     serializer_class = HouseholdSerializer
     permission_classes = (IsAdminUser,)
     """

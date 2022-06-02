@@ -1,11 +1,8 @@
-from ast import Str
 from django.db import models
 from django.core.validators import MaxValueValidator
 from django.db.models.functions import Now
-from django.db.models import F, Sum, Prefetch, Q
 
-
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta
 import uuid
 
 
